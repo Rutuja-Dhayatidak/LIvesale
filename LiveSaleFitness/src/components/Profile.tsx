@@ -361,7 +361,7 @@ const Profile: React.FC<ProfileProps> = ({ isDarkMode, onToggleTheme, onLogout, 
           <TouchableOpacity style={[styles.listItem, { borderBottomColor: colors.border }]}>
             <View style={styles.listItemLeft}>
               <Text style={styles.listIcon}>⚙️</Text>
-              <Text style={[styles.listText, { color: colors.text }]}>Account Settings</Text>
+              <Text style={[styles.listText, { color: colors.text }]}>Account Settingssssss</Text>
             </View>
             <Text style={[styles.listArrow, { color: colors.subText }]}>›</Text>
           </TouchableOpacity>
