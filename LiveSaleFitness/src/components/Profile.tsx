@@ -442,7 +442,7 @@ const Profile: React.FC<ProfileProps> = ({ isDarkMode, onToggleTheme, onLogout, 
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }, cardShadow]}>
             <Text style={[styles.statValue, { color: colors.text }]}>{profile.age ? `${profile.age}` : 'N/A'}</Text>
-            <Text style={[styles.statLabel, { color: colors.subText }]}>Age</Text>
+            <Text style={[styles.statLabel, { color: colors.subText }]}>Age1</Text>
           </View>
         </View>
 
