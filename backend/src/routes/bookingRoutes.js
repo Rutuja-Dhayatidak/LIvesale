@@ -12,7 +12,10 @@ router.post('/cancel', protectUser, bookingController.cancelBooking);
 // 3. Verify Payment signature (manually triggered from frontend)
 router.post('/verify', protectUser, bookingController.verifyPayment);
 
-// 4. Webhook listener for payment capture (public endpoint)
+// 4. Get customer's own bookings
+router.get('/my-bookings', protectUser, bookingController.getMyBookings);
+
+// 5. Webhook listener for payment capture (public endpoint)
 router.post('/webhook', bookingController.handleRazorpayWebhook);
 
 module.exports = router;

@@ -8,7 +8,7 @@ const generateOrderNumber = require('../utils/generateOrderNumber');
 // ─── CREATE RAZORPAY ORDER ───────────────────────────────────────────────────
 exports.createRazorpayOrder = async (req, res) => {
   try {
-    const { items, storeId, address } = req.body;
+    const { items, storeId, address, notes } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart items are required' });
@@ -106,6 +106,7 @@ exports.createRazorpayOrder = async (req, res) => {
       paymentStatus: 'Pending',
       orderStatus: 'Pending',
       razorpayOrderId: razorpayOrder.id,
+      notes: notes || '',
     });
 
     res.json({

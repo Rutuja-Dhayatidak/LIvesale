@@ -129,6 +129,17 @@ app.get('/api/public/trainers/:trainerId', adminTrainerController.getPublicTrain
 // Trainer stats (admin)
 app.get('/api/admin/trainer-stats', adminTrainerController.getTrainerStats);
 
+// Mobile App Banners Route
+const MobileAppBanner = require('./models/MobileAppBanner');
+app.get('/api/mobile-app-banners', async (req, res, next) => {
+  try {
+    const banners = await MobileAppBanner.find({ isActive: true }).sort({ sortOrder: 1 });
+    res.json(banners);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Global Error Handler (last)
 app.use(errorHandler);
 

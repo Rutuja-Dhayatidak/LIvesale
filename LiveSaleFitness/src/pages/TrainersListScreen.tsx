@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { trainerService, Trainer } from '../services/trainer';
+import { profileService } from '../services/profile';
 
 interface TrainersListScreenProps {
   isDarkMode: boolean;
@@ -50,6 +51,25 @@ const TrainersListScreen: React.FC<TrainersListScreenProps> = ({ isDarkMode, onT
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userPrefs, setUserPrefs] = useState<{ genderPref: string; modePref: string } | null>(null);
+
+  useEffect(() => {
+    const loadUserPrefs = async () => {
+      try {
+        const res = await profileService.getProfile();
+        const data = res.data || res;
+        if (data) {
+          setUserPrefs({
+            genderPref: data.trainerGenderPreference || 'any',
+            modePref: data.preferredTrainingMode || 'any',
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load profile for TrainerListScreen:', err);
+      }
+    };
+    loadUserPrefs();
+  }, []);
 
   useEffect(() => {
     const fetchTrainers = async () => {
@@ -123,53 +143,85 @@ const TrainersListScreen: React.FC<TrainersListScreenProps> = ({ isDarkMode, onT
           </View>
         ) : (
           <View style={styles.gridContainer}>
-            {trainers.map((trainer) => (
-              <TouchableOpacity
-                key={trainer._id}
-                style={[styles.gridCard, { backgroundColor: colors.card, borderColor: colors.border }, cardShadow]}
-                activeOpacity={0.8}
-                onPress={() => onTrainerSelect(trainer._id)}
-              >
-                <View style={styles.gridImageContainer}>
-                  <Image 
-                    source={{ uri: trainer.photo || trainer.profileImage || 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?q=80&w=400' }} 
-                    style={styles.gridImage} 
-                    resizeMode="cover"
-                  />
-                </View>
-                <View style={styles.gridInfo}>
-                  <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={1}>{trainer.name}</Text>
-                  <Text style={[styles.gridType, { color: colors.subText }]} numberOfLines={1}>
-                    {(trainer.specializations || trainer.specialization)?.join(', ') || 'Fitness Trainer'}
-                  </Text>
-                  {trainer.city ? (
-                    <Text style={[styles.gridType, { color: colors.subText, fontSize: 10 }]} numberOfLines={1}>
-                      📍 {trainer.city}
+            {(() => {
+              const displayedTrainers = trainers.filter(trainer => {
+                if (!userPrefs) return true;
+                
+                // 1. Gender check
+                const genderPref = userPrefs.genderPref.toLowerCase();
+                const trainerGender = (trainer.gender || '').toLowerCase();
+                if (genderPref !== 'any' && trainerGender && trainerGender !== genderPref) {
+                  return false;
+                }
+
+                // 2. Mode check
+                const modePref = userPrefs.modePref.toLowerCase();
+                const trainerModes = (trainer.trainingTypes || []).map(m => m.toLowerCase());
+                if (modePref !== 'any' && trainerModes.length > 0 && !trainerModes.includes(modePref)) {
+                  return false;
+                }
+
+                return true;
+              });
+
+              if (displayedTrainers.length === 0) {
+                return (
+                  <View style={{ width: '100%', padding: 40, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 40, marginBottom: 12 }}>🏋️</Text>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 6 }}>No Trainers Found</Text>
+                    <Text style={{ color: colors.subText, fontSize: 13, textAlign: 'center' }}>No trainers available matching your preference.</Text>
+                  </View>
+                );
+              }
+
+              return displayedTrainers.map((trainer) => (
+                <TouchableOpacity
+                  key={trainer._id}
+                  style={[styles.gridCard, { backgroundColor: colors.card, borderColor: colors.border }, cardShadow]}
+                  activeOpacity={0.8}
+                  onPress={() => onTrainerSelect(trainer._id)}
+                >
+                  <View style={styles.gridImageContainer}>
+                    <Image 
+                      source={{ uri: trainer.photo || trainer.profileImage || 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?q=80&w=400' }} 
+                      style={styles.gridImage} 
+                      resizeMode="cover"
+                    />
+                  </View>
+                  <View style={styles.gridInfo}>
+                    <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={1}>{trainer.name}</Text>
+                    <Text style={[styles.gridType, { color: colors.subText }]} numberOfLines={1}>
+                      {(trainer.specializations || trainer.specialization)?.join(', ') || 'Fitness Trainer'}
                     </Text>
-                  ) : null}
+                    {trainer.city ? (
+                      <Text style={[styles.gridType, { color: colors.subText, fontSize: 10 }]} numberOfLines={1}>
+                        📍 {trainer.city}
+                      </Text>
+                    ) : null}
 
-                  <View style={styles.gridRatingRow}>
-                    <Text style={styles.starIcon}>★</Text>
-                    <Text style={[styles.gridRating, { color: colors.text }]}>{trainer.rating || '4.5'}</Text>
+                    {/* Badge for perfect preference match */}
+                    {userPrefs && 
+                     (userPrefs.genderPref !== 'any' || userPrefs.modePref !== 'any') && (
+                      <View style={{ backgroundColor: isDarkMode ? '#1C2E24' : '#E8F5E9', paddingVertical: 2, paddingHorizontal: 6, borderRadius: 6, alignSelf: 'flex-start', marginVertical: 3 }}>
+                        <Text style={{ color: '#2E7D32', fontSize: 9, fontWeight: 'bold' }}>⭐ Match</Text>
+                      </View>
+                    )}
+
+                    <View style={styles.gridRatingRow}>
+                      <Text style={styles.starIcon}>★</Text>
+                      <Text style={[styles.gridRating, { color: colors.text }]}>{trainer.rating || '4.5'}</Text>
+                    </View>
+
+                    <View style={styles.gridFooter}>
+                      <Text style={[styles.gridPrice, { color: colors.text }]}>₹{trainer.pricePerSession || 1000}</Text>
+                      <TouchableOpacity style={[styles.gridBookBtn, { backgroundColor: colors.accentLight }]}>
+                        <Text style={[styles.gridBookBtnText, { color: colors.buttonText }]}>Book</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-
-                  <View style={styles.gridFooter}>
-                    <Text style={[styles.gridPrice, { color: colors.text }]}>₹{trainer.pricePerSession || 1000}</Text>
-                    <TouchableOpacity style={[styles.gridBookBtn, { backgroundColor: colors.accentLight }]}>
-                      <Text style={[styles.gridBookBtnText, { color: colors.buttonText }]}>Book</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-
-            {trainers.length === 0 && !loading && (
-              <View style={{ width: '100%', padding: 40, alignItems: 'center' }}>
-                <Text style={{ fontSize: 40, marginBottom: 12 }}>🏋️</Text>
-                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 6 }}>No Trainers Found</Text>
-                <Text style={{ color: colors.subText, fontSize: 13, textAlign: 'center' }}>No active trainers available right now. Check back later!</Text>
-              </View>
-            )}
+                </TouchableOpacity>
+              ));
+            })()}
           </View>
         )}
       </ScrollView>

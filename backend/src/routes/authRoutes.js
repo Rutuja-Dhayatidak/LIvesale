@@ -409,9 +409,19 @@ router.post('/verify-otp', async (req, res) => {
 // GET /api/auth/me (Get authenticated user profile)
 router.get('/me', protectUser, async (req, res) => {
   try {
+    const user = await User.findById(req.user._id)
+      .select('-password')
+      .populate({
+        path: 'favoriteGyms',
+        select: 'name location heroImage images rating reviewsCount address'
+      })
+      .populate({
+        path: 'favoriteTrainers',
+        select: 'name photo profileImage specializations specialization experience trainingTypes rating pricePerSession'
+      });
     res.status(200).json({
       success: true,
-      data: req.user,
+      data: user,
       statusCode: 200
     });
   } catch (error) {
@@ -428,7 +438,11 @@ router.put('/profile', protectUser, upload.single('profilePhoto'), async (req, r
       return res.status(404).json({ success: false, message: "User not found", statusCode: 404 });
     }
 
-    const { name, phone, age, gender, height, weight, fitnessGoal, location, city } = req.body;
+    let { 
+      name, phone, age, gender, height, weight, fitnessGoal, location, city,
+      foodPreference, dietGoal, allergies, specialRemark,
+      trainerGenderPreference, preferredTrainingMode
+    } = req.body;
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
@@ -439,6 +453,24 @@ router.put('/profile', protectUser, upload.single('profilePhoto'), async (req, r
     if (fitnessGoal) user.fitnessGoal = fitnessGoal;
     if (location) user.location = location;
     if (city) user.city = city;
+    
+    if (foodPreference) user.foodPreference = foodPreference;
+    if (dietGoal) user.dietGoal = dietGoal;
+    if (allergies) {
+      if (typeof allergies === 'string') {
+        try {
+          user.allergies = JSON.parse(allergies);
+        } catch (e) {
+          user.allergies = allergies.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      } else if (Array.isArray(allergies)) {
+        user.allergies = allergies;
+      }
+    }
+    if (specialRemark !== undefined) user.specialRemark = specialRemark;
+    
+    if (trainerGenderPreference) user.trainerGenderPreference = trainerGenderPreference;
+    if (preferredTrainingMode) user.preferredTrainingMode = preferredTrainingMode;
 
     // If file provided, upload to Cloudinary
     if (req.file) {
@@ -507,6 +539,153 @@ router.post('/trainer/:trainerId/review', protectUser, async (req, res) => {
   } catch (error) {
     console.error("Submit review error:", error);
     res.status(500).json({ success: false, message: "Failed to submit review", error: error.message, statusCode: 500 });
+  }
+});
+
+// POST /api/auth/favorites/gyms/:gymId (Toggle favorite gym)
+router.post('/favorites/gyms/:gymId', protectUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    if (!user.favoriteGyms) user.favoriteGyms = [];
+    
+    const index = user.favoriteGyms.indexOf(req.params.gymId);
+    let isFavorite = false;
+    if (index > -1) {
+      user.favoriteGyms.splice(index, 1);
+      isFavorite = false;
+    } else {
+      user.favoriteGyms.push(req.params.gymId);
+      isFavorite = true;
+    }
+    
+    await user.save();
+    res.json({ success: true, isFavorite, message: isFavorite ? 'Added to favorites' : 'Removed from favorites' });
+  } catch (err) {
+    console.error("Toggle favorite gym error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/auth/favorites/trainers/:trainerId (Toggle favorite trainer)
+router.post('/favorites/trainers/:trainerId', protectUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    if (!user.favoriteTrainers) user.favoriteTrainers = [];
+    
+    const index = user.favoriteTrainers.indexOf(req.params.trainerId);
+    let isFavorite = false;
+    if (index > -1) {
+      user.favoriteTrainers.splice(index, 1);
+      isFavorite = false;
+    } else {
+      user.favoriteTrainers.push(req.params.trainerId);
+      isFavorite = true;
+    }
+    
+    await user.save();
+    res.json({ success: true, isFavorite, message: isFavorite ? 'Added to favorites' : 'Removed from favorites' });
+  } catch (err) {
+    console.error("Toggle favorite trainer error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/auth/favorites/invoices/download (Download invoice HTML file)
+router.get('/favorites/invoices/download', async (req, res) => {
+  try {
+    const { item, price, date, order, userName, userEmail, userPhone } = req.query;
+
+    const totalAmount = Number(price?.replace(/[^\d]/g, '') || '0');
+    const subtotal = Math.round((totalAmount / 1.18) * 100) / 100;
+    const gst = Math.round((totalAmount - subtotal) * 100) / 100;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice - ${order}</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 30px; color: #333; }
+    .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); font-size: 16px; line-height: 24px; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h2 { margin: 0; color: #FF7A00; }
+    .section-title { font-weight: bold; margin-top: 20px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+    .info-row { display: flex; justify-content: space-between; margin: 8px 0; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .table th, .table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    .table th { background-color: #f2f2f2; }
+    .total-box { margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; }
+    .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="invoice-box">
+    <div class="header">
+      <h2>LiveSale Fitness</h2>
+      <p>Official Transaction Receipt</p>
+    </div>
+    
+    <div class="info-row">
+      <div>
+        <strong>Invoice No:</strong> ${order || 'N/A'}<br>
+        <strong>Date:</strong> ${date || 'N/A'}
+      </div>
+      <div style="text-align: right;">
+        <strong>Status:</strong> <span style="color: green;">PAID</span>
+      </div>
+    </div>
+    
+    <div class="section-title">Billed To:</div>
+    <div class="info-row">
+      <div>
+        <strong>Name:</strong> ${userName || 'User'}<br>
+        <strong>Email:</strong> ${userEmail || 'N/A'}<br>
+        <strong>Phone:</strong> ${userPhone || 'N/A'}
+      </div>
+    </div>
+    
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Item Description</th>
+          <th>Qty</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${item || 'Fitness Service'}</td>
+          <td>1</td>
+          <td>${price || 'N/A'}</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="total-box">
+      <p style="font-size: 14px; font-weight: normal; margin: 5px 0;">Subtotal (Excl. GST): ₹${subtotal.toFixed(2)}</p>
+      <p style="font-size: 14px; font-weight: normal; margin: 5px 0;">GST (18%): ₹${gst.toFixed(2)}</p>
+      <p style="margin: 10px 0; color: #FF7A00;">Total Amount Paid: ${price || 'N/A'}</p>
+    </div>
+    
+    <div class="footer">
+      Thank you for choosing LiveSale Fitness!<br>
+      This is an electronically generated receipt, no signature required.
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Disposition', `attachment; filename="Invoice_${order || 'Receipt'}.html"`);
+    res.send(htmlContent);
+  } catch (err) {
+    res.status(500).send("Error generating invoice download: " + err.message);
   }
 });
 

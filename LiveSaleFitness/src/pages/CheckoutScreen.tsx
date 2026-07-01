@@ -87,6 +87,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   const [shippingState, setShippingState] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [specialRemark, setSpecialRemark] = useState('');
 
   useEffect(() => {
     const initCheckout = async () => {
@@ -105,6 +106,9 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
           setShippingPhone(profileData.phone || '');
           setShippingCity(profileData.city || '');
           setShippingState(profileData.location || '');
+          if (profileData.specialRemark) {
+            setSpecialRemark(profileData.specialRemark);
+          }
           
           if (profileData.name && profileData.phone && shippingAddress && profileData.city && profileData.location) {
             setCheckoutStep('summary');
@@ -232,7 +236,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
       };
 
       // Create order
-      const orderRes = await healthStoreService.createOrder(items, product.healthStore || '', addressPayload);
+      const orderRes = await healthStoreService.createOrder(items, product.healthStore || '', addressPayload, specialRemark);
       const orderData = orderRes?.data || orderRes;
 
       if (!orderData || !orderData.razorpayOrderId) {

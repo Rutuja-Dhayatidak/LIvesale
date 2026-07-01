@@ -11,11 +11,12 @@ import {
   Platform,
   Animated,
   PermissionsAndroid,
+  Alert,
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { trainerService, Trainer } from '../services/trainer';
 import { healthStoreService } from '../services/healthstore';
-import { gymService, Gym } from '../services/Gym';
+import { gymService, Gym, MobileAppBanner } from '../services/Gym';
 
 const { width } = Dimensions.get('window');
 
@@ -90,6 +91,73 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
   const [supplementsLoading, setSupplementsLoading] = useState(true);
   const [homeGyms, setHomeGyms] = useState<Gym[]>([]);
   const [gymsLoading, setGymsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredGyms = searchQuery.trim() === '' 
+    ? homeGyms 
+    : (['gym', 'gyms'].includes(searchQuery.toLowerCase().trim()) 
+        ? homeGyms 
+        : homeGyms.filter(gym => 
+            gym.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            gym.location?.address?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            gym.location?.city?.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+
+  const filteredTrainers = searchQuery.trim() === '' 
+    ? homeTrainers 
+    : (['trainer', 'trainers'].includes(searchQuery.toLowerCase().trim()) 
+        ? homeTrainers 
+        : homeTrainers.filter(trainer => 
+            trainer.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            (trainer.specializations && Array.isArray(trainer.specializations) && trainer.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))) ||
+            (trainer.specialization && Array.isArray(trainer.specialization) && trainer.specialization.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())))
+          )
+      );
+
+  const filteredSupplements = searchQuery.trim() === '' 
+    ? supplements 
+    : (['supplement', 'supplements', 'protein', 'whey', 'powder'].includes(searchQuery.toLowerCase().trim()) 
+        ? supplements 
+        : supplements.filter(item => 
+            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            item.category?.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+
+  // Dynamic Banners States
+  const [banners, setBanners] = useState<MobileAppBanner[]>([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
+  const [bannersError, setBannersError] = useState<string | null>(null);
+
+  // Home BMI States
+  const [homeBmiHeight, setHomeBmiHeight] = useState('');
+  const [homeBmiWeight, setHomeBmiWeight] = useState('');
+  const [homeBmiResult, setHomeBmiResult] = useState<string | null>(null);
+  const [homeBmiCategory, setHomeBmiCategory] = useState('');
+  const [homeBmiColor, setHomeBmiColor] = useState('#22C55E');
+
+  const calculateHomeBmi = () => {
+    const h = parseFloat(homeBmiHeight);
+    const w = parseFloat(homeBmiWeight);
+    if (!h || !w) {
+      Alert.alert("Error", "Please enter valid height and weight values.");
+      return;
+    }
+    const bmiVal = w / ((h / 100) * (h / 100));
+    setHomeBmiResult(bmiVal.toFixed(1));
+    if (bmiVal < 18.5) {
+      setHomeBmiCategory('Underweight');
+      setHomeBmiColor('#3B82F6');
+    } else if (bmiVal >= 18.5 && bmiVal < 25) {
+      setHomeBmiCategory('Normal weight');
+      setHomeBmiColor('#22C55E');
+    } else {
+      setHomeBmiCategory('Overweight');
+      setHomeBmiColor('#EF4444');
+    }
+  };
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(25)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -217,6 +285,24 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
     };
     fetchHomeGyms();
   }, []);
+
+  // Fetch dynamic mobile app banners
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        setBannersLoading(true);
+        const data = await gymService.getMobileAppBanners();
+        setBanners(data || []);
+        setBannersError(null);
+      } catch (err: any) {
+        console.warn('Home banners fetch error:', err);
+        setBannersError(err.message || 'Failed to load banners');
+      } finally {
+        setBannersLoading(false);
+      }
+    };
+    fetchBanners();
+  }, []);
  
   const handleBannerScroll = (event: any) => {
     const scrollOffset = event.nativeEvent.contentOffset.x;
@@ -320,7 +406,14 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
             placeholder="Search gyms, trainers, supplements..."
             placeholderTextColor={colors.subText}
             style={[styles.searchInput, { color: colors.text }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
+          {searchQuery.trim() !== '' && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 6, marginRight: 4 }}>
+              <Text style={{ color: colors.subText, fontWeight: 'bold', fontSize: 14 }}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <TouchableOpacity style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.8}>
           <Image
@@ -333,89 +426,105 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
 
       {/* Promotional Banner Section */}
       <Animated.View style={[styles.bannerContainer, { transform: [{ scale: bannerScale }] }]}>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleBannerScroll}
-          scrollEventThrottle={16}
-          style={styles.bannerScrollView}
-        >
-          {/* Banner Item 1 */}
-          <View style={styles.bannerItem}>
-            {/* Dark overlay backdrop simulated layout */}
-            <View style={styles.bannerOverlay}>
-              <View style={styles.bannerLeft}>
-                <Text style={styles.bannerBadge}>LIVE FITNESS DEALS NEAR YOU</Text>
-                <Text style={styles.bannerTitle}>FITNESS{"\n"}MADE AFFORDABLE</Text>
-                <Text style={styles.bannerSubtitle}>Save up to 40% on gym memberships</Text>
-                <TouchableOpacity style={styles.exploreButton}>
-                  <Text style={styles.exploreButtonText}>Explore Deals  →</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Glowing 40% Off Badge */}
-              <View style={styles.percentBadge}>
-                <Text style={styles.percentBadgeText}>UP TO{"\n"}<Text style={styles.percentBadgeBold}>40%</Text>{"\n"}OFF</Text>
-              </View>
-            </View>
-
-            {/* Dummy image representation on the right side of banner background */}
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=600' }}
-              style={styles.bannerBgImage}
-            />
+        {bannersLoading ? (
+          <View style={[styles.bannerItem, { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card }]}>
+            <Text style={{ color: colors.subText }}>Loading banners...</Text>
           </View>
-
-          {/* Banner Item 2 */}
-          <View style={styles.bannerItem}>
-            <View style={styles.bannerOverlay}>
-              <View style={styles.bannerLeft}>
-                <Text style={[styles.bannerBadge, { color: '#FF7A00' }]}>EXPERT TRAINING SESSIONS</Text>
-                <Text style={styles.bannerTitle}>PERSONAL TRAINER{"\n"}DISCOUNTS</Text>
-                <Text style={styles.bannerSubtitle}>Get certified personal coaching today</Text>
-                <TouchableOpacity style={[styles.exploreButton, { backgroundColor: '#FF7A00' }]}>
-                  <Text style={[styles.exploreButtonText, { color: '#FFFFFF' }]}>Explore Trainers  →</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={[styles.percentBadge, { backgroundColor: '#FF7A00' }]}>
-                <Text style={[styles.percentBadgeText, { color: '#FFFFFF' }]}>UP TO{"\n"}<Text style={styles.percentBadgeBold}>30%</Text>{"\n"}OFF</Text>
-              </View>
-            </View>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600' }}
-              style={styles.bannerBgImage}
-            />
+        ) : bannersError ? (
+          <View style={[styles.bannerItem, { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card, padding: 20 }]}>
+            <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>⚠️ Failed to load banners</Text>
+            <Text style={{ color: colors.subText, fontSize: 11, marginTop: 4 }}>{bannersError}</Text>
           </View>
-
-          {/* Banner Item 3 */}
-          <View style={styles.bannerItem}>
-            <View style={styles.bannerOverlay}>
-              <View style={styles.bannerLeft}>
-                <Text style={[styles.bannerBadge, { color: '#8B5CF6' }]}>TOP QUALITY SUPPLEMENTS</Text>
-                <Text style={styles.bannerTitle}>SUPPLEMENTS{"\n"}MARKETPLACE</Text>
-                <Text style={styles.bannerSubtitle}>Premium protein whey and wellness kits</Text>
-                <TouchableOpacity style={[styles.exploreButton, { backgroundColor: '#8B5CF6' }]}>
-                  <Text style={[styles.exploreButtonText, { color: '#FFFFFF' }]}>Shop Supplements  →</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={[styles.percentBadge, { backgroundColor: '#8B5CF6' }]}>
-                <Text style={[styles.percentBadgeText, { color: '#FFFFFF' }]}>UP TO{"\n"}<Text style={styles.percentBadgeBold}>25%</Text>{"\n"}OFF</Text>
-              </View>
-            </View>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?q=80&w=600' }}
-              style={styles.bannerBgImage}
-            />
+        ) : banners.length === 0 ? (
+          <View style={[styles.bannerItem, { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card }]}>
+            <Text style={{ color: colors.subText }}>No active offers today</Text>
           </View>
-        </ScrollView>
+        ) : (
+          <>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleBannerScroll}
+              scrollEventThrottle={16}
+              style={styles.bannerScrollView}
+            >
+              {banners.map((banner, index) => {
+                const badgeColor = index % 3 === 0 ? colors.accent : index % 3 === 1 ? '#FF7A00' : '#8B5CF6';
+                
+                return (
+                  <View key={banner._id || index} style={styles.bannerItem}>
+                    {/* Dark overlay backdrop simulated layout */}
+                    <View style={styles.bannerOverlay}>
+                      <View style={styles.bannerLeft}>
+                        {!!banner.smallTitle && (
+                          <Text style={[styles.bannerBadge, { color: badgeColor }]}>
+                            {banner.smallTitle.toUpperCase()}
+                          </Text>
+                        )}
+                        {!!banner.headline && (
+                          <Text style={styles.bannerTitle}>
+                            {banner.headline.toUpperCase()}
+                          </Text>
+                        )}
+                        {!!banner.subtitle && (
+                          <Text style={styles.bannerSubtitle}>
+                            {banner.subtitle}
+                          </Text>
+                        )}
+                        {!!banner.buttonText && (
+                          <TouchableOpacity style={[styles.exploreButton, { backgroundColor: badgeColor }]}>
+                            <Text style={styles.exploreButtonText}>{banner.buttonText}  →</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
 
-        {/* Slider Dots Indicator */}
-        <View style={styles.dotsContainer}>
-          <View style={[styles.dot, activeBannerIndex === 0 && styles.activeDot]} />
-          <View style={[styles.dot, activeBannerIndex === 1 && styles.activeDot]} />
-          <View style={[styles.dot, activeBannerIndex === 2 && styles.activeDot]} />
-        </View>
+                      {/* Glowing Discount Badge */}
+                      {!!banner.discountText && (
+                        <View style={[styles.percentBadge, { backgroundColor: badgeColor }]}>
+                          <Text style={[styles.percentBadgeText, { color: '#FFFFFF' }]}>
+                            {banner.discountText.includes('%') ? (
+                              <>
+                                UP TO{"\n"}
+                                <Text style={styles.percentBadgeBold}>
+                                  {banner.discountText.replace(/up to|off/gi, '').trim()}
+                                </Text>
+                                {"\n"}OFF
+                              </>
+                            ) : (
+                              banner.discountText
+                            )}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Image Background */}
+                    <Image
+                      source={{ uri: banner.bannerImage }}
+                      style={styles.bannerBgImage}
+                    />
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Slider Dots Indicator */}
+            {banners.length > 1 && (
+              <View style={styles.dotsContainer}>
+                {banners.map((_, index) => (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.dot, 
+                      activeBannerIndex === index && [styles.activeDot, { backgroundColor: colors.accent }]
+                    ]} 
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        )}
       </Animated.View>
 
       {/* Navigation Scroll Categories */}
@@ -562,12 +671,12 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
           <View style={{ width: 120, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ color: colors.subText, fontSize: 12 }}>Loading...</Text>
           </View>
-        ) : supplements.length === 0 ? (
+        ) : filteredSupplements.length === 0 ? (
           <View style={{ width: 200, justifyContent: 'center', alignItems: 'center', paddingVertical: 20 }}>
             <Text style={{ color: colors.subText, fontSize: 13 }}>No supplements found</Text>
           </View>
         ) : (
-          supplements.map((item) => {
+          filteredSupplements.map((item) => {
             const price = item.sellingPrice ? `₹${item.sellingPrice}` : item.price ? `₹${item.price}` : 'N/A';
             const imageUrl = item.image || (item.images && item.images[0]) || 'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?q=80&w=400';
             const brand = item.brand || item.category || 'Supplement';
@@ -627,12 +736,12 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
           <View style={{ width: 120, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ color: colors.subText, fontSize: 12 }}>Loading...</Text>
           </View>
-        ) : homeGyms.length === 0 ? (
+        ) : filteredGyms.length === 0 ? (
           <View style={{ width: 200, justifyContent: 'center', alignItems: 'center', paddingVertical: 20 }}>
             <Text style={{ color: colors.subText, fontSize: 13 }}>No gyms found</Text>
           </View>
         ) : (
-          homeGyms.map((item) => {
+          filteredGyms.map((item) => {
             const imageUrl = item.heroImage || item.images?.[0] || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=400';
             const rating = Number(item.rating) || 4.5;
             const distance = item.distance || '1.2 km away';
@@ -661,7 +770,18 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
                   <Text style={[styles.gymTitle, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <Text style={[styles.gymDetails, { color: colors.subText, marginBottom: 0 }]}>{distance}</Text>
-                    <Text style={[styles.gymPrice, { color: colors.accent }]}>₹1,999<Text style={[styles.gymUnit, { color: colors.subText }]}>/mo</Text></Text>
+                    <Text style={[styles.gymPrice, { color: colors.accent }]}>
+                      ₹{(() => {
+                        if (item && (item as any).membershipPlans && (item as any).membershipPlans.length > 0) {
+                          const prices = (item as any).membershipPlans.map((plan: any) => Number(plan.price)).filter((p: number) => !isNaN(p));
+                          if (prices.length > 0) {
+                            return Math.min(...prices).toLocaleString('en-IN');
+                          }
+                        }
+                        return '1,999';
+                      })()}
+                      <Text style={[styles.gymUnit, { color: colors.subText }]}>/mo</Text>
+                    </Text>
                   </View>
                 </View>
                 <View style={[styles.gymViewButton, { backgroundColor: colors.accentLight }]}>
@@ -683,19 +803,19 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={[styles.horizontalScroll, { marginBottom: 100 }]}
+        style={[styles.horizontalScroll, { marginBottom: 15 }]}
         contentContainerStyle={styles.horizontalScrollContent}
       >
         {trainersLoading ? (
           <View style={{ width: 120, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ color: colors.subText, fontSize: 12 }}>Loading...</Text>
           </View>
-        ) : homeTrainers.length === 0 ? (
+        ) : filteredTrainers.length === 0 ? (
           <View style={{ width: 200, justifyContent: 'center', alignItems: 'center', paddingVertical: 20 }}>
             <Text style={{ color: colors.subText, fontSize: 13 }}>No trainers found</Text>
           </View>
         ) : (
-          homeTrainers.map((item) => {
+          filteredTrainers.map((item) => {
             const photoUrl = item.photo || item.profileImage || 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?q=80&w=400';
             const specialization = (item.specializations?.[0] || item.specialization?.[0] || 'Fitness Trainer');
             const price = item.pricePerSession ? `₹${item.pricePerSession}` : 'Contact';
@@ -755,6 +875,51 @@ const Home: React.FC<HomeProps> = ({ isDarkMode, onToggleTheme, onNavigateToTrai
           })
         )}
       </ScrollView>
+
+      {/* Quick BMI Calculator Card */}
+      <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>🧮  Quick BMI Calculator</Text>
+      </View>
+      <View style={[styles.quickBmiCard, { backgroundColor: colors.card, borderColor: colors.border }, cardShadow]}>
+        <Text style={[styles.quickBmiDesc, { color: colors.subText }]}>Calculate your Body Mass Index instantly to check your health status.</Text>
+        <View style={styles.quickBmiInputsRow}>
+          <View style={styles.quickBmiInputCol}>
+            <Text style={[styles.quickBmiInputLabel, { color: colors.subText }]}>Height (cm)</Text>
+            <TextInput 
+              style={[styles.quickBmiInput, { color: colors.text, borderColor: colors.border, backgroundColor: isDarkMode ? '#0D0E12' : '#F1F2F4' }]} 
+              placeholder="e.g. 175"
+              placeholderTextColor={colors.subText}
+              keyboardType="numeric"
+              value={homeBmiHeight}
+              onChangeText={setHomeBmiHeight}
+            />
+          </View>
+          <View style={styles.quickBmiInputCol}>
+            <Text style={[styles.quickBmiInputLabel, { color: colors.subText }]}>Weight (kg)</Text>
+            <TextInput 
+              style={[styles.quickBmiInput, { color: colors.text, borderColor: colors.border, backgroundColor: isDarkMode ? '#0D0E12' : '#F1F2F4' }]} 
+              placeholder="e.g. 70"
+              placeholderTextColor={colors.subText}
+              keyboardType="numeric"
+              value={homeBmiWeight}
+              onChangeText={setHomeBmiWeight}
+            />
+          </View>
+        </View>
+        
+        {homeBmiResult ? (
+          <View style={[styles.quickBmiResultBox, { backgroundColor: homeBmiColor + '1A', borderColor: homeBmiColor }]}>
+            <Text style={[styles.quickBmiResultLabel, { color: colors.text }]}>Your BMI: <Text style={{ color: homeBmiColor, fontWeight: '900' }}>{homeBmiResult}</Text> ({homeBmiCategory})</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity 
+          style={[styles.quickBmiBtn, { backgroundColor: colors.accent }]}
+          onPress={calculateHomeBmi}
+        >
+          <Text style={{ color: colors.buttonText, fontWeight: '800' }}>Calculate BMI</Text>
+        </TouchableOpacity>
+      </View>
     </Animated.ScrollView>
   </Animated.View>
 );
@@ -1393,6 +1558,94 @@ const styles = StyleSheet.create({
   bookNowText: {
     fontSize: 9,
     fontWeight: '900',
+  },
+  quickBmiCard: {
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginBottom: 40,
+  },
+  quickBmiDesc: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  quickBmiInputsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  quickBmiInputCol: {
+    flex: 1,
+  },
+  quickBmiInputLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  quickBmiInput: {
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  quickBmiResultBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  quickBmiResultLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  quickBmiBtn: {
+    height: 44,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blogCard: {
+    width: 250,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 16,
+    overflow: 'hidden',
+  },
+  blogImage: {
+    width: '100%',
+    height: 120,
+    resizeMode: 'cover',
+  },
+  blogContent: {
+    padding: 12,
+  },
+  blogTag: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  blogTagText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  blogTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  blogReadTime: {
+    fontSize: 10,
+    fontWeight: '600',
   },
 });
 

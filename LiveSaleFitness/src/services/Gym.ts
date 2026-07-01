@@ -109,6 +109,72 @@ export const gymService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Initiate membership purchase
+  initiateMembership: async (data: {
+    gymId: string;
+    planId: string;
+    planTitle: string;
+    planType?: string;
+    pricePaid: number;
+    duration: string;
+    discountAmount?: number;
+    facilitiesIncluded?: string[];
+  }) => {
+    try {
+      const response = await Api.post('/memberships/initiate', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Verify membership payment signature
+  verifyMembership: async (data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => {
+    try {
+      const response = await Api.post('/memberships/verify', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get current user's memberships
+  getMyMemberships: async () => {
+    try {
+      const response = await Api.get('/memberships/my');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Fetch dynamic mobile app banners
+  getMobileAppBanners: async (): Promise<MobileAppBanner[]> => {
+    try {
+      const response = await Api.get('/mobile-app-banners');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };
+
+export interface MobileAppBanner {
+  _id: string;
+  bannerImage: string;
+  smallTitle?: string;
+  headline?: string;
+  subtitle?: string;
+  discountText?: string;
+  buttonText?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export default gymService;

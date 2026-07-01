@@ -387,7 +387,7 @@ exports.getPublicTrainers = async (req, res) => {
     if (req.query.maxPrice) query.pricePerSession = { ...query.pricePerSession, $lte: Number(req.query.maxPrice) };
 
     const trainers = await Trainer.find(query)
-      .select('name profilePhoto specializations pricePerSession rating trainingTypes city experience review clients')
+      .select('name profilePhoto specializations pricePerSession rating trainingTypes city experience review clients gender')
       .skip(skip).limit(limit);
     const total = await Trainer.countDocuments(query);
  
@@ -404,7 +404,8 @@ exports.getPublicTrainers = async (req, res) => {
         city: t.city,
         experience: t.experience,
         review: t.review,
-        clients: t.clients
+        clients: t.clients,
+        gender: t.gender
       })),
       total,
       pages: Math.ceil(total / limit)

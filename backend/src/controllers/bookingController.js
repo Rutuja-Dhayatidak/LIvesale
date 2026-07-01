@@ -121,7 +121,20 @@ exports.initiateBooking = async (req, res) => {
         trainingType,
         address,
         phone,
-        expireAt: new Date(Date.now() + 10 * 60 * 1000) // 10 min lock
+        expireAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min lock
+        paymentStatus: 'pending',
+        trainerName: trainer ? trainer.name : '',
+        customerName: req.user ? req.user.name : '',
+        customerPhone: phone || (req.user ? req.user.phone : ''),
+        customerEmail: req.user ? req.user.email : '',
+        duration: req.body.duration || 60,
+        bookingAddress: req.body.bookingAddress || address || '',
+        gymId: req.body.gymId || '',
+        gymName: req.body.gymName || '',
+        cancellationReason: '',
+        refundStatus: 'not_applicable',
+        remindersSent24h: false,
+        remindersSent1h: false
       });
       await booking.save();
       savedBookings.push(booking);
@@ -180,7 +193,7 @@ exports.handleRazorpayWebhook = async (req, res) => {
       await Booking.updateMany(
         { orderId },
         {
-          $set: { status: 'confirmed', paymentId },
+          $set: { status: 'confirmed', paymentId, paymentStatus: 'paid' },
           $unset: { expireAt: "" }
         }
       );
@@ -264,6 +277,9 @@ exports.cancelBooking = async (req, res) => {
     }
 
     booking.status = 'cancelled';
+    booking.cancellationReason = req.body.cancellationReason || "Cancelled by user";
+    booking.refundStatus = refundAmount > 0 ? (refundPercent === 100 ? "full_refund" : "partial_refund") : "no_refund";
+    booking.paymentStatus = refundAmount > 0 ? "refunded" : booking.paymentStatus;
     await booking.save();
 
     // Notify cancellation via Email
@@ -322,7 +338,7 @@ exports.verifyPayment = async (req, res) => {
     await Booking.updateMany(
       { orderId: razorpay_order_id },
       {
-        $set: { status: 'confirmed', paymentId: razorpay_payment_id },
+        $set: { status: 'confirmed', paymentId: razorpay_payment_id, paymentStatus: 'paid' },
         $unset: { expireAt: "" }
       }
     );
@@ -345,5 +361,19 @@ exports.verifyPayment = async (req, res) => {
   } catch (error) {
     console.error("Payment manual verification error:", error);
     res.status(500).json({ success: false, message: "Verification failed", error: error.message });
+  }
+};
+
+exports.getMyBookings = async (req, res) => {
+  try {
+    const customerId = req.user._id;
+    const bookings = await Booking.find({ customerId })
+      .populate('trainerId', 'name profilePhoto specialization specializations phone')
+      .sort({ date: -1, slot: -1 });
+
+    res.status(200).json({ success: true, bookings });
+  } catch (error) {
+    console.error("Get customer bookings error:", error);
+    res.status(500).json({ success: false, message: "Failed to load bookings", error: error.message });
   }
 };

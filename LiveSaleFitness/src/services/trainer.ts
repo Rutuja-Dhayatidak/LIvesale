@@ -16,6 +16,7 @@ export interface Trainer {
   city?: string;
   review?: number;
   clients?: number;
+  gender?: string;
 }
 
 export const trainerService = {
@@ -63,6 +64,50 @@ export const trainerService = {
   getAvailableSlots: async (trainerId: string, date: string) => {
     try {
       const response = await Api.get(`/trainers/${trainerId}/slots`, { params: { date } });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Initiate booking (creates Razorpay order and pending bookings)
+  initiateBooking: async (data: {
+    trainerId: string;
+    slot: string;
+    day: string;
+    date: string;
+    price: number;
+    plan: 'Trial' | 'Single' | 'Monthly';
+    trainingType: string;
+    address?: string;
+    phone: string;
+  }) => {
+    try {
+      const response = await Api.post('/bookings/initiate', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Verify booking payment
+  verifyBookingPayment: async (data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => {
+    try {
+      const response = await Api.post('/bookings/verify', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get customer's trainer bookings
+  getMyBookings: async () => {
+    try {
+      const response = await Api.get('/bookings/my-bookings');
       return response.data;
     } catch (error) {
       throw error;

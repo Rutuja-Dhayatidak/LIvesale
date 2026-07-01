@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
 import { healthStoreService, HealthStoreProduct } from '../services/healthstore';
+import { profileService } from '../services/profile';
+import { UserDietPreferences } from '../types/diet';
+import { isFoodPreferenceCompatible, getRecommendation } from '../utils/dietRecommendation';
 
 interface HealthStoreScreenProps {
   isDarkMode: boolean;
@@ -15,6 +18,27 @@ const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onPro
   const [storeItems, setStoreItems] = useState<HealthStoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userPrefs, setUserPrefs] = useState<UserDietPreferences | null>(null);
+
+  useEffect(() => {
+    const loadUserPrefs = async () => {
+      try {
+        const res = await profileService.getProfile();
+        const data = res.data || res;
+        if (data) {
+          setUserPrefs({
+            foodPreference: data.foodPreference || 'veg',
+            dietGoal: data.dietGoal || 'build_muscle',
+            allergies: data.allergies || [],
+            specialRemark: data.specialRemark || '',
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load profile for HealthStoreScreen preferences:', err);
+      }
+    };
+    loadUserPrefs();
+  }, []);
   
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -83,6 +107,12 @@ const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onPro
     const isDiet = item.productType === 'Diet' || item.productType === 'Food';
     const isFav = !!favorites[item._id];
 
+    // Compute recommendation and allergy logic
+    const recommendation = userPrefs ? getRecommendation(userPrefs, item) : null;
+    const isRecommended = !!recommendation?.isRecommended;
+    const hasAllergyWarning = !!recommendation?.hasAllergyWarning;
+    const allergyMatch = recommendation?.allergyMatch || '';
+
     // Determine category / tag
     const tagText = isDiet ? 'High Protein' : (item.category || 'Supplement');
     const tagIcon = isDiet ? '🌱' : '⚡';
@@ -112,7 +142,7 @@ const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onPro
       }
     }
 
-    const cardHeight = isDiet ? 210 : 235;
+    const cardHeight = isDiet ? (hasAllergyWarning ? 250 : 215) : (hasAllergyWarning ? 275 : 240);
 
     return (
       <TouchableOpacity 
@@ -148,6 +178,19 @@ const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onPro
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Goal & Allergy Badges */}
+          {isRecommended && (
+            <View style={[styles.recommendationBadge, { backgroundColor: colors.accentLight }]}>
+              <Text style={{ color: colors.accent, fontSize: 10, fontWeight: 'bold' }}>★ Recommended for your goal</Text>
+            </View>
+          )}
+
+          {hasAllergyWarning && (
+            <View style={styles.allergyWarningContainer}>
+              <Text style={styles.allergyWarningText}>⚠️ Contains ingredient matching your allergy ({allergyMatch})</Text>
+            </View>
+          )}
 
           {/* Title */}
           <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
@@ -245,11 +288,18 @@ const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onPro
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
         </View>
-      ) : (
-        <FlatList
-          data={storeItems}
-          renderItem={renderItem}
-          keyExtractor={(item) => item._id}
+      ) : (() => {
+        const displayedItems = storeItems.filter(item => {
+          if (!userPrefs) return true;
+          const foodType = item.foodPreference || (item as any).foodType || '';
+          return isFoodPreferenceCompatible(userPrefs.foodPreference, foodType);
+        });
+
+        return (
+          <FlatList
+            data={displayedItems}
+            renderItem={renderItem}
+            keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -258,7 +308,8 @@ const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onPro
             </View>
           }
         />
-      )}
+        );
+      })()}
     </View>
   );
 };
@@ -445,6 +496,28 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 11,
+  },
+  recommendationBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  allergyWarningContainer: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#EF4444',
+    borderWidth: 1,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginVertical: 4,
+  },
+  allergyWarningText: {
+    color: '#991B1B',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 

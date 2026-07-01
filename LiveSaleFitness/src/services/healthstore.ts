@@ -20,6 +20,7 @@ export interface HealthStoreProduct {
   variants?: any[];
   deliveryAvailable?: boolean;
   healthStore?: string;
+  foodPreference?: string;
 }
 
 export const healthStoreService = {
@@ -64,9 +65,9 @@ export const healthStoreService = {
   },
 
   // Create Razorpay order
-  createOrder: async (items: any[], storeId: string, address: any) => {
+  createOrder: async (items: any[], storeId: string, address: any, notes?: string) => {
     try {
-      const response = await Api.post('/health-store/payment/create-order', { items, storeId, address });
+      const response = await Api.post('/health-store/payment/create-order', { items, storeId, address, notes });
       return response.data;
     } catch (error) {
       throw error;

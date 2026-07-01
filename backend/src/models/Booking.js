@@ -19,7 +19,20 @@ const bookingSchema = new mongoose.Schema({
   phone: { type: String },
   expireAt: { type: Date }, // TTL index field
   reminderSent24h: { type: Boolean, default: false },
-  reminderSent1h: { type: Boolean, default: false }
+  reminderSent1h: { type: Boolean, default: false },
+  paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
+  trainerName: { type: String },
+  customerName: { type: String },
+  customerPhone: { type: String },
+  customerEmail: { type: String },
+  duration: { type: Number, default: 60 },
+  bookingAddress: { type: String },
+  gymId: { type: String, default: "" },
+  gymName: { type: String, default: "" },
+  cancellationReason: { type: String, default: "" },
+  refundStatus: { type: String, default: "not_applicable" },
+  remindersSent24h: { type: Boolean, default: false },
+  remindersSent1h: { type: Boolean, default: false }
 }, { timestamps: true });
 
 // Create TTL index on expireAt field
