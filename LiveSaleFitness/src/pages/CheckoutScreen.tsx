@@ -45,10 +45,14 @@ const requestLocationPermission = async () => {
   }
 };
 
+import { CartItem } from './CartScreen';
+
 interface CheckoutScreenProps {
   isDarkMode: boolean;
-  productId: string;
-  selectedVariantIndex: number;
+  productId?: string;
+  selectedVariantIndex?: number;
+  isCart?: boolean;
+  cartItems?: CartItem[];
   onBack: () => void;
   onPaymentSuccess: (details: {
     orderId: string;
@@ -62,6 +66,8 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   isDarkMode,
   productId,
   selectedVariantIndex,
+  isCart = false,
+  cartItems = [],
   onBack,
   onPaymentSuccess,
 }) => {
@@ -79,6 +85,25 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [checkoutStep, setCheckoutStep] = useState<'address' | 'summary'>('address');
 
+  const defaultImage = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+  const imagesArray = product && product.images && product.images.length > 0 
+    ? product.images 
+    : [product?.image || defaultImage];
+    
+  const isSupplement = product?.productType === 'Supplement';
+  const hasVariants = isSupplement && product?.variants && product?.variants.length > 0;
+  const currentVariant = hasVariants ? product!.variants![selectedVariantIndex!] : null;
+
+  const sellingPrice = currentVariant ? currentVariant.sellingPrice : (product?.sellingPrice || product?.oneTimePrice || product?.price || 0);
+  const mrpPrice = currentVariant ? currentVariant.mrp : (product?.originalPrice || null);
+
+  const totalAmount = isCart 
+    ? cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    : sellingPrice;
+  const originalTotalAmount = isCart 
+    ? totalAmount
+    : (mrpPrice || sellingPrice);
+
   // Shipping Address States
   const [shippingName, setShippingName] = useState('');
   const [shippingPhone, setShippingPhone] = useState('');
@@ -93,10 +118,12 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
     const initCheckout = async () => {
       try {
         setLoading(true);
-        // 1. Fetch Product details
-        const res = await healthStoreService.getProductById(productId);
-        const data = res?.data || res;
-        setProduct(data);
+        if (!isCart && productId) {
+          // 1. Fetch Product details
+          const res = await healthStoreService.getProductById(productId);
+          const data = res?.data || res;
+          setProduct(data);
+        }
 
         // 2. Fetch User Profile for prefill
         const profileRes = await profileService.getProfile();
@@ -122,7 +149,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
     };
 
     initCheckout();
-  }, [productId]);
+  }, [productId, isCart]);
 
   const getAddressFromCoords = async (latitude: number, longitude: number) => {
     try {
@@ -211,20 +238,29 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
   };
 
   const handleProceedToPayment = async () => {
-    if (!product) return;
+    if (isCart && cartItems.length === 0) return;
+    if (!isCart && !product) return;
 
     try {
       setPaymentLoading(true);
 
-      const items = [
-        {
-          productId: product._id,
-          quantity: 1,
-          purchaseType: 'One Time',
-          flavor: currentVariant ? currentVariant.flavor : undefined,
-          size: currentVariant ? currentVariant.size : undefined,
-        }
-      ];
+      const items = isCart
+        ? cartItems.map((item) => ({
+            productId: item.productId || item.id.split('-')[0],
+            quantity: item.quantity,
+            purchaseType: 'One Time',
+            flavor: item.flavor,
+            size: item.size,
+          }))
+        : [
+            {
+              productId: product!._id,
+              quantity: 1,
+              purchaseType: 'One Time',
+              flavor: currentVariant ? currentVariant.flavor : undefined,
+              size: currentVariant ? currentVariant.size : undefined,
+            },
+          ];
 
       const addressPayload = {
         fullName: shippingName,
@@ -235,8 +271,12 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
         email: '',
       };
 
+      const healthStoreId = isCart 
+        ? (cartItems[0]?.healthStore || '') 
+        : (product!.healthStore || '');
+
       // Create order
-      const orderRes = await healthStoreService.createOrder(items, product.healthStore || '', addressPayload, specialRemark);
+      const orderRes = await healthStoreService.createOrder(items, healthStoreId, addressPayload, specialRemark);
       const orderData = orderRes?.data || orderRes;
 
       if (!orderData || !orderData.razorpayOrderId) {
@@ -245,8 +285,8 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
 
       // Razorpay options
       const options = {
-        description: `Order for ${product.name}`,
-        image: imagesArray[0] || defaultImage,
+        description: isCart ? `Order for ${cartItems.length} items` : `Order for ${product!.name}`,
+        image: isCart ? (cartItems[0]?.image || defaultImage) : (imagesArray[0] || defaultImage),
         currency: orderData.currency || 'INR',
         key: orderData.keyId,
         amount: orderData.amount,
@@ -275,7 +315,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
               orderId: orderData.orderId,
               paymentId: data.razorpay_payment_id,
               amount: orderData.amount,
-              productName: product.name,
+              productName: isCart ? `${cartItems[0]?.name} and others` : product!.name,
             });
           } catch (verifyErr: any) {
             console.error('Signature verification error:', verifyErr);
@@ -306,7 +346,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
     );
   }
 
-  if (!product) {
+  if (!isCart && !product) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ color: colors.text, fontSize: 16 }}>Product details not found.</Text>
@@ -317,17 +357,6 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
     );
   }
 
-  const defaultImage = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
-  const imagesArray = product.images && product.images.length > 0 
-    ? product.images 
-    : [product.image || defaultImage];
-    
-  const isSupplement = product.productType === 'Supplement';
-  const hasVariants = isSupplement && product.variants && product.variants.length > 0;
-  const currentVariant = hasVariants ? product.variants![selectedVariantIndex] : null;
-
-  const sellingPrice = currentVariant ? currentVariant.sellingPrice : (product.sellingPrice || product.oneTimePrice || product.price || 0);
-  const mrpPrice = currentVariant ? currentVariant.mrp : (product.originalPrice || null);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -469,63 +498,81 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
             </View>
 
             {/* Product Details Section */}
-            <View style={[styles.summaryProductCard, { backgroundColor: isDarkMode ? '#1E1F24' : '#FFFFFF', borderColor: colors.border }]}>
-              <Image source={{ uri: imagesArray[0] || defaultImage }} style={styles.summaryProductImage} />
-              <View style={styles.summaryProductInfo}>
-                <Text style={[styles.summaryProductName, { color: colors.text }]} numberOfLines={2}>
-                  {product.name}
-                </Text>
-                {currentVariant ? (
-                  <Text style={[styles.summaryProductVariant, { color: colors.subText }]}>
-                    Size: {currentVariant.size} · Flavor: {currentVariant.flavor}
-                  </Text>
-                ) : (
-                  <Text style={[styles.summaryProductVariant, { color: colors.subText }]}>
-                    {product.category}
-                  </Text>
-                )}
-                
-                <View style={styles.summaryPriceRow}>
-                  <Text style={[styles.summarySellingPrice, { color: colors.accent }]}>₹{sellingPrice}</Text>
-                  {mrpPrice && mrpPrice > sellingPrice ? (
-                    <>
-                      <Text style={[styles.summaryMrpPrice, { color: colors.subText }]}>₹{mrpPrice}</Text>
-                      <Text style={styles.summaryDiscountText}>
-                        {Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100)}% Off
-                      </Text>
-                    </>
-                  ) : null}
+            {isCart ? (
+              cartItems.map((item) => (
+                <View key={item.id} style={[styles.summaryProductCard, { backgroundColor: isDarkMode ? '#1E1F24' : '#FFFFFF', borderColor: colors.border, marginBottom: 12 }]}>
+                  <Image source={{ uri: item.image }} style={styles.summaryProductImage} />
+                  <View style={styles.summaryProductInfo}>
+                    <Text style={[styles.summaryProductName, { color: colors.text }]} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <Text style={[styles.summaryProductVariant, { color: colors.subText }]}>
+                      Qty: {item.quantity}
+                    </Text>
+                    <View style={styles.summaryPriceRow}>
+                      <Text style={[styles.summarySellingPrice, { color: colors.accent }]}>₹{item.price * item.quantity}</Text>
+                    </View>
+                  </View>
                 </View>
-                <Text style={[styles.deliveryDateText, { color: colors.subText }]}>
-                  Delivery by {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </Text>
+              ))
+            ) : product ? (
+              <View style={[styles.summaryProductCard, { backgroundColor: isDarkMode ? '#1E1F24' : '#FFFFFF', borderColor: colors.border }]}>
+                <Image source={{ uri: imagesArray[0] || defaultImage }} style={styles.summaryProductImage} />
+                <View style={styles.summaryProductInfo}>
+                  <Text style={[styles.summaryProductName, { color: colors.text }]} numberOfLines={2}>
+                    {product.name}
+                  </Text>
+                  {currentVariant ? (
+                    <Text style={[styles.summaryProductVariant, { color: colors.subText }]}>
+                      Size: {currentVariant.size} · Flavor: {currentVariant.flavor}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.summaryProductVariant, { color: colors.subText }]}>
+                      {product.category}
+                    </Text>
+                  )}
+                  
+                  <View style={styles.summaryPriceRow}>
+                    <Text style={[styles.summarySellingPrice, { color: colors.accent }]}>₹{sellingPrice}</Text>
+                    {mrpPrice && mrpPrice > sellingPrice ? (
+                      <>
+                        <Text style={[styles.summaryMrpPrice, { color: colors.subText }]}>₹{mrpPrice}</Text>
+                        <Text style={styles.summaryDiscountText}>
+                          {Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100)}% Off
+                        </Text>
+                      </>
+                    ) : null}
+                  </View>
+                  <Text style={[styles.deliveryDateText, { color: colors.subText }]}>
+                    Delivery by {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </Text>
+                </View>
               </View>
-            </View>
+            ) : null}
 
             {/* Price Details Section */}
             <View style={[styles.priceDetailsCard, { backgroundColor: isDarkMode ? '#1E1F24' : '#FFFFFF', borderColor: colors.border }]}>
               <Text style={[styles.priceDetailsTitle, { color: colors.text }]}>Price Details</Text>
               <View style={styles.priceDetailRow}>
                 <Text style={[styles.priceDetailLabel, { color: colors.subText }]}>MRP (incl. of all taxes)</Text>
-                <Text style={[styles.priceDetailVal, { color: colors.text }]}>₹{mrpPrice || sellingPrice}</Text>
+                <Text style={[styles.priceDetailVal, { color: colors.text }]}>₹{originalTotalAmount}</Text>
               </View>
               <View style={styles.priceDetailRow}>
                 <Text style={[styles.priceDetailLabel, { color: colors.subText }]}>Delivery Fees</Text>
                 <Text style={[styles.priceDetailVal, { color: colors.accent }]}>FREE</Text>
               </View>
-              {mrpPrice && mrpPrice > sellingPrice ? (
+              {!isCart && mrpPrice && mrpPrice > sellingPrice ? (
                 <View style={styles.priceDetailRow}>
                   <Text style={[styles.priceDetailLabel, { color: colors.subText }]}>Discounts</Text>
                   <Text style={[styles.priceDetailVal, { color: colors.accent }]}>-₹{mrpPrice - sellingPrice}</Text>
                 </View>
               ) : null}
-              <View style={styles.priceDetailDivider} />
-              <View style={styles.priceDetailRow}>
+              <View style={[styles.priceDetailRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10, marginTop: 10 }]}>
                 <Text style={[styles.totalAmountLabel, { color: colors.text }]}>Total Amount</Text>
-                <Text style={[styles.totalAmountVal, { color: colors.accent }]}>₹{sellingPrice}</Text>
+                <Text style={[styles.totalAmountVal, { color: colors.accent }]}>₹{totalAmount}</Text>
               </View>
               
-              {mrpPrice && mrpPrice > sellingPrice ? (
+              {!isCart && mrpPrice && mrpPrice > sellingPrice ? (
                 <View style={[styles.savingsBanner, { backgroundColor: 'rgba(0, 255, 102, 0.1)' }]}>
                   <Text style={[styles.savingsBannerText, { color: colors.accent }]}>
                     You'll save ₹{mrpPrice - sellingPrice} on this order!
@@ -537,8 +584,8 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({
             {/* Summary Continue Button */}
             <View style={styles.summaryFooterContainer}>
               <View style={styles.footerPriceContainer}>
-                <Text style={[styles.footerOriginalPrice, { color: colors.subText }]}>₹{mrpPrice || sellingPrice}</Text>
-                <Text style={[styles.footerFinalPrice, { color: colors.text }]}>₹{sellingPrice}</Text>
+                <Text style={[styles.footerOriginalPrice, { color: colors.subText }]}>₹{originalTotalAmount}</Text>
+                <Text style={[styles.footerFinalPrice, { color: colors.text }]}>₹{totalAmount}</Text>
               </View>
               <TouchableOpacity 
                 style={[styles.continueBtn, { backgroundColor: '#FFC72C' }]} 

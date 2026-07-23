@@ -3,8 +3,8 @@ import { StyleSheet, Text, View, TouchableOpacity, Dimensions, Platform, Animate
 
 interface BottomNavigationProps {
   isDarkMode: boolean;
-  currentTab: 'home' | 'deals' | 'fitness' | 'cart' | 'profile';
-  onTabPress: (tab: 'home' | 'deals' | 'fitness' | 'cart' | 'profile') => void;
+  currentTab: 'home' | 'deals' | 'fitness' | 'gym' | 'profile';
+  onTabPress: (tab: 'home' | 'deals' | 'fitness' | 'gym' | 'profile') => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -25,11 +25,11 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ isDarkMode, current
     { id: 'home', label: 'Home', icon: '🏠' },
     { id: 'deals', label: 'Store', icon: '💊' },
     { id: 'fitness', label: 'Trainer', icon: '🎖️' },
-    { id: 'cart', label: 'Gym', icon: '🏋️' },
+    { id: 'gym', label: 'Gym', icon: '🏋️' },
     { id: 'profile', label: 'Profile', icon: '👤' },
   ] as const;
 
-  const tabNames = ['home', 'deals', 'fitness', 'cart', 'profile'];
+  const tabNames = ['home', 'deals', 'fitness', 'gym', 'profile'];
   const activeIndex = tabNames.indexOf(currentTab);
   const animationValue = useRef(new Animated.Value(activeIndex)).current;
 

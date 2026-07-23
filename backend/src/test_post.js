@@ -1,6 +1,6 @@
 async function testPost() {
   const token = '70634457dc29eb1fa89326c86e6e9b30df2cc4538657ace8936e658d2cdd7d27';
-  const url = `http://localhost:5000/api/health-store/register/${token}`;
+  const url = `http://localhost:5001/api/health-store/register/${token}`;
 
   try {
     const res = await fetch(url, {

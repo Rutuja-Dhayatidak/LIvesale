@@ -1,0 +1,8 @@
+
+> backend@1.0.0 start
+> node src/server.js
+
+◇ injected env (18) from .env // tip: ⌘ suppress logs { quiet: true }
+✅ MongoDB Connected: ac-bgtqxwm-shard-00-00.gwfe7ci.mongodb.net
+✅ Super Admin already exists
+🚀 Server running on port 5001

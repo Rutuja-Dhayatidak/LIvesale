@@ -40,7 +40,7 @@ export const gymService = {
   // Fetch all gyms (public finder)
   getAllGyms: async () => {
     try {
-      const response = await Api.get('/gyms');
+      const response = await Api.get('/gyms/public');
       return response.data;
     } catch (error) {
       throw error;

@@ -9,11 +9,12 @@ interface HealthStoreScreenProps {
   isDarkMode: boolean;
   onProductSelect: (productId: string) => void;
   initialTab?: 'diet' | 'supplement';
+  onAddToCart?: (product: HealthStoreProduct) => void;
 }
 
 const { width } = Dimensions.get('window');
 
-const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onProductSelect, initialTab = 'diet' }) => {
+const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onProductSelect, initialTab = 'diet', onAddToCart }) => {
   const [activeTab, setActiveTab] = useState<'diet' | 'supplement'>(initialTab);
   const [storeItems, setStoreItems] = useState<HealthStoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,6 +229,12 @@ const HealthStoreScreen: React.FC<HealthStoreScreenProps> = ({ isDarkMode, onPro
             <TouchableOpacity 
               activeOpacity={0.8}
               style={[styles.addButton, { backgroundColor: colors.accent }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                if (onAddToCart) {
+                  onAddToCart(item);
+                }
+              }}
             >
               <Text style={styles.addButtonIcon}>🛒</Text>
               <Text style={styles.addButtonText}>Add to Cart</Text>

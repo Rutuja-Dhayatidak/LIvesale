@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StatusBar, View, StyleSheet, BackHandler } from 'react-native';
+import { StatusBar, View, StyleSheet, BackHandler, Alert } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import OnboardingScreen from './src/pages/OnboardingScreen';
@@ -9,7 +9,7 @@ import Profile from './src/components/Profile';
 import BottomNavigation from './src/components/BottomNavigation';
 import TrainersListScreen from './src/pages/TrainersListScreen';
 import TrainerProfileScreen from './src/pages/TrainerProfileScreen';
-import CartScreen from './src/pages/CartScreen';
+import CartScreen, { CartItem } from './src/pages/CartScreen';
 import GymScreen from './src/pages/GymScreen';
 import HealthStoreScreen from './src/pages/HealthStoreScreen';
 import ProductDetailScreen from './src/pages/ProductDetailScreen';
@@ -22,7 +22,45 @@ import GymDetailsScreen from './src/pages/GymDetailsScreen';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<'onboarding' | 'signin' | 'register' | 'home'>('onboarding');
-  const [currentTab, setCurrentTab] = useState<'home' | 'deals' | 'fitness' | 'cart' | 'profile'>('home');
+  const [currentTab, setCurrentTab] = useState<'home' | 'deals' | 'fitness' | 'gym' | 'profile'>('home');
+  const [showCart, setShowCart] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  const addToCart = (product: any, variantIndex?: number) => {
+    const isSupplement = product.productType === 'Supplement';
+    const hasVariants = isSupplement && product.variants && product.variants.length > 0;
+    const currentVariant = hasVariants && variantIndex !== undefined && variantIndex >= 0 ? product.variants![variantIndex] : null;
+
+    const sellingPrice = currentVariant ? currentVariant.sellingPrice : (product.sellingPrice || product.oneTimePrice || product.price || 0);
+    const id = currentVariant ? `${product._id}-${variantIndex}` : product._id;
+    const name = currentVariant ? `${product.name} (${currentVariant.flavor || currentVariant.size || 'Default'})` : product.name;
+    const image = product.images && product.images.length > 0 ? product.images[0] : (product.image || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
+
+    setCartItems((prevItems) => {
+      const existing = prevItems.find((item) => item.id === id);
+      if (existing) {
+        return prevItems.map((item) =>
+          item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [
+        ...prevItems,
+        {
+          id,
+          name,
+          price: sellingPrice,
+          quantity: 1,
+          image,
+          productId: product._id,
+          variantIndex: variantIndex,
+          flavor: currentVariant ? currentVariant.flavor : undefined,
+          size: currentVariant ? currentVariant.size : undefined,
+          healthStore: product.healthStore,
+        },
+      ];
+    });
+    Alert.alert('Success', 'Item added to cart!');
+  };
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [selectedTrainerId, setSelectedTrainerId] = useState<string | null>(null);
   const [selectedGymId, setSelectedGymId] = useState<string | null>(null);
@@ -34,8 +72,9 @@ function App() {
     productName: string;
   } | null>(null);
   const [checkoutData, setCheckoutData] = useState<{
-    productId: string;
-    selectedVariantIndex: number;
+    productId?: string;
+    selectedVariantIndex?: number;
+    isCart?: boolean;
   } | null>(null);
   const [showMyOrders, setShowMyOrders] = useState(false);
   const [healthStoreTab, setHealthStoreTab] = useState<'diet' | 'supplement'>('diet');
@@ -62,6 +101,9 @@ function App() {
         // If viewing a product detail, go back to store
         setSelectedProductId(null);
         return true;
+      } else if (showCart) {
+        setShowCart(false);
+        return true;
       } else if (currentScreen === 'home' && currentTab !== 'home') {
         // If on a tab other than home, go back to home tab
         setCurrentTab('home');
@@ -85,7 +127,7 @@ function App() {
     );
 
     return () => backHandler.remove();
-  }, [selectedTrainerId, selectedProductId, currentTab, currentScreen, paymentSuccessData, checkoutData, showMyOrders]);
+  }, [selectedTrainerId, selectedProductId, currentTab, currentScreen, paymentSuccessData, checkoutData, showMyOrders, showCart]);
 
   const colors = {
     bg: isDarkMode ? '#0D0E12' : '#F1F2F4',
@@ -115,10 +157,28 @@ function App() {
             isDarkMode={isDarkMode}
             productId={checkoutData.productId}
             selectedVariantIndex={checkoutData.selectedVariantIndex}
+            isCart={checkoutData.isCart}
+            cartItems={cartItems}
             onBack={() => setCheckoutData(null)}
             onPaymentSuccess={(details) => {
               setCheckoutData(null);
               setPaymentSuccessData(details);
+              if (checkoutData.isCart) {
+                setCartItems([]);
+              }
+            }}
+          />
+        </AnimatedScreenWrapper>
+      ) : showCart ? (
+        <AnimatedScreenWrapper screenKey="cart" type="slide-right">
+          <CartScreen
+            isDarkMode={isDarkMode}
+            onBack={() => setShowCart(false)}
+            cartItems={cartItems}
+            setCartItems={setCartItems}
+            onCheckout={() => {
+              setShowCart(false);
+              setCheckoutData({ isCart: true });
             }}
           />
         </AnimatedScreenWrapper>
@@ -180,6 +240,7 @@ function App() {
                   productId={selectedProductId} 
                   onBack={() => setSelectedProductId(null)} 
                   onBuyNow={(prodId: string, varIndex: number) => setCheckoutData({ productId: prodId, selectedVariantIndex: varIndex })}
+                  onAddToCart={addToCart}
                 />
               </AnimatedScreenWrapper>
             ) : currentTab === 'profile' ? (
@@ -200,10 +261,11 @@ function App() {
                   isDarkMode={isDarkMode}
                   onProductSelect={(id) => setSelectedProductId(id)}
                   initialTab={healthStoreTab}
+                  onAddToCart={addToCart}
                 />
               </AnimatedScreenWrapper>
-            ) : currentTab === 'cart' ? (
-              <AnimatedScreenWrapper screenKey="cart" type="slide-up">
+            ) : currentTab === 'gym' ? (
+              <AnimatedScreenWrapper screenKey="gym" type="slide-up">
                 <GymScreen isDarkMode={isDarkMode} onGymSelect={(id) => setSelectedGymId(id)} />
               </AnimatedScreenWrapper>
             ) : currentTab === 'fitness' ? (
@@ -222,8 +284,8 @@ function App() {
                   onNavigateToDiet={() => { setHealthStoreTab('diet'); setCurrentTab('deals'); }}
                   onNavigateToSupplements={() => { setHealthStoreTab('supplement'); setCurrentTab('deals'); }}
                   onTrainerSelect={(id) => setSelectedTrainerId(id)}
-                  onNavigateToCart={() => setCurrentTab('cart')}
-                  onNavigateToGyms={() => setCurrentTab('cart')}
+                  onNavigateToCart={() => setShowCart(true)}
+                  onNavigateToGyms={() => setCurrentTab('gym')}
                   onGymSelect={(id) => setSelectedGymId(id)}
                 />
               </AnimatedScreenWrapper>

@@ -7,7 +7,7 @@ const data = JSON.stringify({
 
 const options = {
   hostname: 'localhost',
-  port: 5000,
+  port: 5001,
   path: '/api/admins/login',
   method: 'POST',
   headers: {
@@ -41,7 +41,7 @@ req.end();
 function verifyToken(token) {
   const verifyOptions = {
     hostname: 'localhost',
-    port: 5000,
+    port: 5001,
     path: '/api/city-admin/dashboard?city=Pune',
     method: 'GET',
     headers: {

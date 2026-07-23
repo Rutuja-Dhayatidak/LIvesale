@@ -2,7 +2,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '@env';
 import { Platform, NativeModules } from 'react-native';
 
-let baseUrl = API_BASE_URL || 'http://localhost:5000/api';
+let baseUrl = (API_BASE_URL || 'http://localhost:5001/api').replace(':5000/', ':5001/');
 
 // On Android/iOS devices, we can dynamically detect the host PC's IP address
 // from Metro bundler's script URL to avoid having to update .env whenever WiFi networks change.
@@ -39,7 +39,7 @@ if (__DEV__) {
       // Emulator fallback
       baseUrl = baseUrl.replace(/localhost|127\.0\.0\.1/, '10.0.2.2');
     } else {
-      // Physical device fallback: keep localhost since we run adb reverse tcp:5000 tcp:5000
+      // Physical device fallback: keep localhost since we run adb reverse tcp:5001 tcp:5001
       baseUrl = baseUrl.replace(/10\.0\.2\.2|127\.0\.0\.1/, 'localhost');
     }
   }

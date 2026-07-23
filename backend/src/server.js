@@ -17,7 +17,7 @@ const startServer = async () => {
     const { runScheduler } = require("./utils/cronJobs");
     runScheduler();
 
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 5001;
 
     const server = http.createServer(app);
     const wss = new WebSocket.Server({ server });

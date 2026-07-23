@@ -88,6 +88,9 @@ const addOwnerGym = async (req, res, next) => {
   }
 };
 
+// GET /api/gyms/public
+router.get('/public', gymFinderController.getAllGyms);
+
 // GET /api/gyms
 // Dispatch to owner logic if Bearer token is present, else public finder logic
 router.get('/', (req, res, next) => {

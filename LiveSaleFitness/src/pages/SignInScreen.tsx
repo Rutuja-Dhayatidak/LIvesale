@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -19,6 +19,14 @@ import { authService } from '../services/authService';
 
 const { width } = Dimensions.get('window');
 
+const loginIcons = {
+  back: 'https://img.icons8.com/material-rounded/96/ffffff/back.png',
+  email: 'https://img.icons8.com/material-outlined/96/94a3b8/new-post.png',
+  lock: 'https://img.icons8.com/material-outlined/96/94a3b8/lock--v1.png',
+  eye: 'https://img.icons8.com/material-outlined/96/ffffff/visible.png',
+  eyeOff: 'https://img.icons8.com/material-outlined/96/ffffff/invisible.png',
+};
+
 interface SignInScreenProps {
   onBackToOnboarding?: () => void;
   onNavigateToRegister?: () => void;
@@ -37,7 +45,6 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Animation values
@@ -150,7 +157,11 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                     onPress={() => setShowLoginForm(false)} 
                     style={styles.backButton}
                   >
-                    <Text style={styles.backArrowText}>←</Text>
+                    <Image
+                      source={{ uri: loginIcons.back }}
+                      style={styles.backIcon}
+                      resizeMode="contain"
+                    />
                   </TouchableOpacity>
                   <Text style={styles.welcomeText}>Welcome back</Text>
                   <Text style={styles.welcomeSubtext}>Sign in to your account</Text>
@@ -178,7 +189,11 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                   {/* Email Field */}
                   <Text style={styles.inputLabel}>EMAIL ADDRESS</Text>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputIcon}>✉️</Text>
+                    <Image
+                      source={{ uri: loginIcons.email }}
+                      style={styles.inputIcon}
+                      resizeMode="contain"
+                    />
                     <TextInput
                       style={styles.textInput}
                       placeholder="name@example.com"
@@ -193,10 +208,14 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                   {/* Password Field */}
                   <Text style={[styles.inputLabel, { marginTop: 16 }]}>PASSWORD</Text>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputIcon}>🔒</Text>
+                    <Image
+                      source={{ uri: loginIcons.lock }}
+                      style={styles.inputIcon}
+                      resizeMode="contain"
+                    />
                     <TextInput
                       style={styles.textInput}
-                      placeholder="••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       placeholderTextColor="#64748B"
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
@@ -204,23 +223,16 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                       onChangeText={setPassword}
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                      <Text style={{ fontSize: 16 }}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                      <Image
+                        source={{ uri: showPassword ? loginIcons.eye : loginIcons.eyeOff }}
+                        style={styles.eyeIcon}
+                        resizeMode="contain"
+                      />
                     </TouchableOpacity>
                   </View>
 
-                  {/* Remember me & Forgot Password */}
+                  {/* Forgot Password */}
                   <View style={styles.formControlRow}>
-                    <TouchableOpacity 
-                      activeOpacity={0.8}
-                      onPress={() => setRememberMe(!rememberMe)}
-                      style={styles.checkboxRow}
-                    >
-                      <View style={[styles.checkbox, { backgroundColor: rememberMe ? '#FF7A00' : 'transparent', borderColor: rememberMe ? '#FF7A00' : '#E2E8F0' }]}>
-                        {rememberMe && <Text style={styles.checkMark}>✓</Text>}
-                      </View>
-                      <Text style={styles.checkboxLabel}>Remember me</Text>
-                    </TouchableOpacity>
-
                     <TouchableOpacity>
                       <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                     </TouchableOpacity>
@@ -236,7 +248,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                     {loading ? (
                       <ActivityIndicator color="#000" />
                     ) : (
-                      <Text style={styles.signInOrangeText}>Sign In  →</Text>
+                      <Text style={styles.signInOrangeText}>Sign In  â†’</Text>
                     )}
                   </TouchableOpacity>
 
@@ -360,10 +372,9 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     marginBottom: 16,
   },
-  backArrowText: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: 'bold',
+  backIcon: {
+    width: 26,
+    height: 26,
   },
   welcomeText: {
     fontSize: 32,
@@ -404,7 +415,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   inputIcon: {
-    fontSize: 18,
+    width: 22,
+    height: 22,
     marginRight: 12,
   },
   textInput: {
@@ -414,37 +426,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   eyeBtn: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eyeIcon: {
+    width: 22,
+    height: 22,
   },
   formControlRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginTop: 16,
     marginBottom: 24,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  checkMark: {
-    color: '#000000',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  checkboxLabel: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '600',
   },
   forgotPasswordText: {
     color: '#FF7A00',
@@ -553,3 +549,5 @@ const styles = StyleSheet.create({
 });
 
 export default SignInScreen;
+
+

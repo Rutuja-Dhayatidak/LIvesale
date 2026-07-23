@@ -30,7 +30,7 @@ async function resetAndTest() {
     await mongoose.disconnect();
 
     // Now call the multipart post
-    const url = `http://localhost:5000/api/health-store/register/${token}`;
+    const url = `http://localhost:5001/api/health-store/register/${token}`;
 
     const formData = new FormData();
     formData.append('description', 'Test Description Multipart');

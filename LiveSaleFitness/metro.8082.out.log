@@ -1,0 +1,65 @@
+
+Welcome to React Native v0.86
+Starting dev server on http://localhost:8082
+
+[34m
+                        ▒▒▓▓▓▓▒▒
+                     ▒▓▓▓▒▒░░▒▒▓▓▓▒
+                  ▒▓▓▓▓░░░▒▒▒▒░░░▓▓▓▓▒
+                 ▓▓▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▓▓
+                 ▓▓░░░░░▒▓▓▓▓▓▓▒░░░░░▓▓
+                 ▓▓░░▓▓▒░░░▒▒░░░▒▓▒░░▓▓
+                 ▓▓░░▓▓▓▓▓▒▒▒▒▓▓▓▓▒░░▓▓
+                 ▓▓░░▓▓▓▓▓▓▓▓▓▓▓▓▓▒░░▓▓
+                 ▓▓▒░░▒▒▓▓▓▓▓▓▓▓▒░░░▒▓▓
+                  ▒▓▓▓▒░░░▒▓▓▒░░░▒▓▓▓▒
+                     ▒▓▓▓▒░░░░▒▓▓▓▒
+                        ▒▒▓▓▓▓▒▒
+
+[39m
+[33m[7m[1m WARN [22m[27m[39m the transform cache was reset.
+[34m[1m                Welcome to Metro [37mv0.84.4[39m
+[22m[39m[2m              Fast - Scalable - Integrated
+
+[22m
+[36m[7m[1m INFO [22m[27m[39m Dev server ready. Press Ctrl+C to exit.
+[36m[7m[1m INFO [22m[27m[39m Interactive mode is not supported in this environment
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓[49m[39m[47m[37m░░░░░░░░░░░░░░░[39m[49m[1m 9% [22m[2m(3/6)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓[49m[39m[47m[37m░░░░░░░░░░░░░░[39m[49m[1m 16% [22m[2m(55/227)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓[49m[39m[47m[37m░░░░░░░░░░░░░[39m[49m[1m 20% [22m[2m(136/308)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓[49m[39m[47m[37m░░░░░░░░░░░░[39m[49m[1m 29% [22m[2m(232/434)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓▓▓[49m[39m[47m[37m░░░░░░░░░░[39m[49m[1m 41% [22m[2m(361/567)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓▓▓▓▓▓▓[49m[39m[47m[37m░░░░░░[39m[49m[1m 64% [22m[2m(534/663)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓▓▓▓▓▓▓▓▓[49m[39m[47m[37m░░░░[39m[49m[1m 80% [22m[2m(665/755)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓▓▓▓▓▓▓▓▓[49m[39m[47m[37m░░░░[39m[49m[1m 80% [22m[2m(774/895)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓▓▓▓▓▓▓▓▓▓[49m[39m[47m[37m░░░[39m[49m[1m 86% [22m[2m(956/1026)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓▓▓▓▓▓▓▓▓▓▓[49m[39m[47m[37m░░[39m[49m[1m 92% [22m[2m(1089/1139)[22m
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓[49m[39m[47m[37m░[39m[49m[1m 99% [22m[2m(1297/1298)[22m
+[32m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m 
+[36m[7m[1m INFO [22m[27m[39m Launching DevTools...
+[debugger-shell stdout] 
+
+[33m[7m[1m MAP [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m MAP [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m 
+[33m[7m[1m MAP [22m[27m[39m[0m[2m src\services/[22m[0m[1mGym.ts[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m MAP [22m[27m[39m[0m[2m src\services/[22m[0m[1mGym.ts[22m 
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m 
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m 
+[36m[7m[1m INFO [22m[27m[39m Launching DevTools...
+[debugger-shell stdout] 
+
+[36m[7m[1m INFO [22m[27m[39m Launching DevTools...
+[debugger-shell stdout] 
+
+[33m[7m[1m MAP [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m MAP [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m 
+[33m[7m[1m MAP [22m[27m[39m[0m[2m src\pages/[22m[0m[1mSignInScreen.tsx[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m MAP [22m[27m[39m[0m[2m src\pages/[22m[0m[1mSignInScreen.tsx[22m 
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m 
+[33m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m [32m[42m[49m[39m[47m[37m░░░░░░░░░░░░░░░░[39m[49m[1m 0% [22m[2m(0/1)[22m
+[32m[7m[1m BUNDLE [22m[27m[39m[0m[2m ./[22m[0m[1mindex.js[22m 
+[31m[7m[1m ERROR [22m[27m[39m [timeout] connection terminated with Device for app='com.livesalefitness' on device='moto g85 5G - 16 - API 36' after not responding for 60 seconds.

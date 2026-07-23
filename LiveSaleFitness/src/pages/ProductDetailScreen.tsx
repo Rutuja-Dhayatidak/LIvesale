@@ -19,9 +19,10 @@ interface ProductDetailScreenProps {
   productId: string;
   onBack: () => void;
   onBuyNow: (productId: string, variantIndex: number) => void;
+  onAddToCart?: (product: HealthStoreProduct, variantIndex: number) => void;
 }
 
-const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ isDarkMode, productId, onBack, onBuyNow }) => {
+const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ isDarkMode, productId, onBack, onBuyNow, onAddToCart }) => {
   const colors = {
     bg: isDarkMode ? '#0D0E12' : '#F1F2F4',
     card: isDarkMode ? 'rgba(22, 26, 34, 0.75)' : 'rgba(255, 255, 255, 0.8)',
@@ -433,7 +434,14 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ isDarkMode, p
 
       {/* Sticky Bottom CTAs */}
       <View style={[styles.bottomCTA, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
-        <TouchableOpacity style={[styles.cartBtn, { borderColor: colors.accent }]}>
+        <TouchableOpacity 
+          style={[styles.cartBtn, { borderColor: colors.accent }]}
+          onPress={() => {
+            if (onAddToCart && product) {
+              onAddToCart(product, selectedVariantIndex);
+            }
+          }}
+        >
           <Text style={[styles.cartBtnText, { color: colors.accent }]}>
             Add to Cart
           </Text>

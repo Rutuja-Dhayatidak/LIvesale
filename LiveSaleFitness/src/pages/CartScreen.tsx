@@ -1,42 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Platform } from 'react-native';
 
-interface CartItem {
+export interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
   image: string;
+  productId?: string;
+  variantIndex?: number;
+  flavor?: string;
+  size?: string;
+  healthStore?: string;
 }
 
 interface CartScreenProps {
   isDarkMode: boolean;
+  onBack?: () => void;
+  cartItems: CartItem[];
+  setCartItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  onCheckout: () => void;
 }
 
-const CartScreen: React.FC<CartScreenProps> = ({ isDarkMode }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: '1',
-      name: 'Adjustable Dumbbells',
-      price: 150.0,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: '2',
-      name: 'Premium Yoga Mat',
-      price: 45.0,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1601140030588-43d9c7cb611b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: '3',
-      name: 'Whey Protein Powder',
-      price: 55.0,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    },
-  ]);
+const CartScreen: React.FC<CartScreenProps> = ({ isDarkMode, onBack, cartItems, setCartItems, onCheckout }) => {
 
   const updateQuantity = (id: string, delta: number) => {
     setCartItems((prevItems) =>
@@ -75,7 +61,7 @@ const CartScreen: React.FC<CartScreenProps> = ({ isDarkMode }) => {
         <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>
           {item.name}
         </Text>
-        <Text style={[styles.itemPrice, { color: colors.accent }]}>${item.price.toFixed(2)}</Text>
+        <Text style={[styles.itemPrice, { color: colors.accent }]}>₹{item.price.toFixed(2)}</Text>
         
         <View style={styles.actionRow}>
           <View style={[styles.quantityContainer, { backgroundColor: isDarkMode ? '#2A2B30' : '#F1F2F4' }]}>
@@ -97,7 +83,14 @@ const CartScreen: React.FC<CartScreenProps> = ({ isDarkMode }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <Text style={[styles.headerTitle, { color: colors.text }]}>Your Cart</Text>
+      <View style={styles.header}>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backArrow}>
+            <Text style={[styles.backArrowText, { color: colors.text }]}>←</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Your Cart</Text>
+      </View>
       
       {cartItems.length > 0 ? (
         <FlatList
@@ -116,20 +109,21 @@ const CartScreen: React.FC<CartScreenProps> = ({ isDarkMode }) => {
       <View style={[styles.summaryContainer, { backgroundColor: colors.cardBg, borderTopColor: colors.border }]}>
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryText, { color: colors.textMuted }]}>Subtotal</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>${subtotal.toFixed(2)}</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>₹{subtotal.toFixed(2)}</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryText, { color: colors.textMuted }]}>Taxes</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>${taxes.toFixed(2)}</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>₹{taxes.toFixed(2)}</Text>
         </View>
         <View style={[styles.summaryRow, styles.totalRow]}>
           <Text style={[styles.totalText, { color: colors.text }]}>Total</Text>
-          <Text style={[styles.totalValue, { color: colors.accent }]}>${total.toFixed(2)}</Text>
+          <Text style={[styles.totalValue, { color: colors.accent }]}>₹{total.toFixed(2)}</Text>
         </View>
         
         <TouchableOpacity 
           style={[styles.checkoutButton, { backgroundColor: cartItems.length === 0 ? colors.border : colors.accent }]}
           disabled={cartItems.length === 0}
+          onPress={onCheckout}
         >
           <Text style={[styles.checkoutButtonText, { color: cartItems.length === 0 ? colors.textMuted : '#000000' }]}>
             Proceed to Checkout
@@ -144,12 +138,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 10 : 20,
+    paddingBottom: 10,
+  },
+  backArrow: {
+    marginRight: 15,
+    paddingVertical: 5,
+  },
+  backArrowText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
   },
   listContainer: {
     paddingHorizontal: 20,

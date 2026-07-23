@@ -1,0 +1,22 @@
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at startServer (C:\GymP\LIvesale\backend\src\server.js:49:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Emitted 'error' event on WebSocketServer instance at:
+    at Server.emit (node:events:524:28)
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v20.20.2
